@@ -4,7 +4,9 @@ import appointmentController from "../controllers/appointment.controller.js";
 const appointmentRoutes = Router();
 
 appointmentRoutes.get("/", appointmentController.list);
+appointmentRoutes.get("/available", appointmentController.available);
 appointmentRoutes.get("/:id", appointmentController.findById);
+appointmentRoutes.post("/public", appointmentController.createPublic);
 appointmentRoutes.post("/", appointmentController.create);
 appointmentRoutes.put("/:id", appointmentController.update);
 appointmentRoutes.delete("/:id", appointmentController.delete);

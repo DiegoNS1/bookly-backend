@@ -1,6 +1,19 @@
 import appointmentService from "../services/appointment.service.js";
 
 class AppointmentController {
+  async available(request, response) {
+    const { date } = request.query;
+    const availability = await appointmentService.available(date);
+
+    return response.json(availability);
+  }
+
+  async createPublic(request, response) {
+    const appointment = await appointmentService.createPublic(request.body);
+
+    return response.status(201).json(appointment);
+  }
+
   async create(request, response) {
     const appointment = await appointmentService.create(request.body);
 

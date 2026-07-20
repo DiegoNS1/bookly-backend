@@ -1,6 +1,12 @@
 import serviceService from "../services/service.service.js";
 
 class ServiceController {
+  async listPublic(request, response) {
+    const services = await serviceService.listPublic();
+
+    return response.json(services);
+  }
+
   async create(request, response) {
     const service = await serviceService.create(request.body);
 

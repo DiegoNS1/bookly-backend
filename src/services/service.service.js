@@ -2,6 +2,26 @@ import prisma from "../database/prisma.js";
 import AppError from "../utils/AppError.js";
 
 class ServiceService {
+  async listPublic() {
+    const services = await prisma.service.findMany({
+      where: {
+        active: true,
+      },
+      select: {
+        id: true,
+        name: true,
+        description: true,
+        duration: true,
+        price: true,
+      },
+      orderBy: {
+        name: "asc",
+      },
+    });
+
+    return services;
+  }
+
   async create(data) {
     const serviceAlreadyExists = await prisma.service.findFirst({
       where: {

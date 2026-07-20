@@ -1,7 +1,127 @@
 import prisma from "../database/prisma.js";
 import AppError from "../utils/AppError.js";
 
+const TIME_SLOTS = [
+  "08:00",
+  "08:30",
+  "09:00",
+  "09:30",
+  "10:00",
+  "10:30",
+  "11:00",
+  "11:30",
+  "13:00",
+  "13:30",
+  "14:00",
+  "14:30",
+  "15:00",
+  "15:30",
+  "16:00",
+  "16:30",
+  "17:00",
+  "17:30",
+];
+
+const DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
+
+function getSaoPauloDayRange(date) {
+  const start = new Date(`${date}T00:00:00-03:00`);
+
+  if (
+    !DATE_PATTERN.test(date) ||
+    Number.isNaN(start.getTime()) ||
+    start.toLocaleDateString("en-CA", {
+      timeZone: "America/Sao_Paulo",
+    }) !== date
+  ) {
+    throw new AppError("Informe uma data válida no formato YYYY-MM-DD.", 400);
+  }
+
+  const end = new Date(start);
+  end.setUTCDate(end.getUTCDate() + 1);
+
+  return { start, end };
+}
+
+function formatTimeInSaoPaulo(date) {
+  return new Intl.DateTimeFormat("pt-BR", {
+    timeZone: "America/Sao_Paulo",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  }).format(date);
+}
+
 class AppointmentService {
+  async available(date) {
+    if (!date) {
+      throw new AppError("A data é obrigatória.", 400);
+    }
+
+    const { start, end } = getSaoPauloDayRange(date);
+
+    const appointments = await prisma.appointment.findMany({
+      where: {
+        appointmentDate: {
+          gte: start,
+          lt: end,
+        },
+      },
+      select: {
+        appointmentDate: true,
+      },
+    });
+
+    const occupiedTimes = new Set(
+      appointments.map((appointment) =>
+        formatTimeInSaoPaulo(appointment.appointmentDate)
+      )
+    );
+
+    const availableTimes = TIME_SLOTS.filter(
+      (time) => !occupiedTimes.has(time)
+    );
+
+    return {
+      date,
+      availableTimes,
+    };
+  }
+
+  async createPublic(data) {
+    const name = data.name?.trim();
+    const phone = data.phone?.trim();
+    const serviceId = Number(data.serviceId);
+
+    if (!name || !phone || !serviceId || !data.appointmentDate) {
+      throw new AppError(
+        "Nome, telefone, serviço, data e horário são obrigatórios.",
+        400
+      );
+    }
+
+    let client = await prisma.client.findFirst({
+      where: {
+        phone,
+      },
+    });
+
+    if (!client) {
+      client = await prisma.client.create({
+        data: {
+          name,
+          phone,
+        },
+      });
+    }
+
+    return this.create({
+      clientId: client.id,
+      serviceId,
+      appointmentDate: data.appointmentDate,
+    });
+  }
+
   async create(data) {
     const clientId = Number(data.clientId);
     const serviceId = Number(data.serviceId);
