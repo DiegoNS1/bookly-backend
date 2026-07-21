@@ -1,7 +1,6 @@
 import "dotenv/config";
 import express from "express";
 import cors from "cors";
-import prisma from "./database/prisma.js";
 import clientRoutes from "./routes/client.routes.js";
 import serviceRoutes from "./routes/service.routes.js";
 import appointmentRoutes from "./routes/appointment.routes.js";
@@ -18,7 +17,6 @@ app.use(express.json());
 app.use("/clients", clientRoutes);
 app.use("/services", serviceRoutes);
 app.use("/appointments", appointmentRoutes);
-app.use(errorMiddleware);
 
 app.get("/", (request, response) => {
   return response.json({
@@ -26,11 +24,7 @@ app.get("/", (request, response) => {
   });
 });
 
-app.get("/test-database", async (request, response) => {
-  const clients = await prisma.client.findMany();
-
-  return response.json(clients);
-});
+app.use(errorMiddleware);
 
 app.listen(PORT, () => {
   console.log(`Servidor rodando na porta ${PORT}`);
